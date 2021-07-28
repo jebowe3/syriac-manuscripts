@@ -47,10 +47,12 @@
     header {
       /*background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Coffee_Beans_%282732722806%29.jpg/1024px-Coffee_Beans_%282732722806%29.jpg');*/
       position: fixed;
-      width: 20%;
+      left: 12px;
+      top: 12px;
+      width: 200px;
       height: 60px;
-      background-color: rgba(255, 255, 255, 1.0);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      background-color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3);
       border-radius: 3px;
       z-index: 800;
     }
@@ -102,7 +104,11 @@
     }
 
     .leaflet-top .leaflet-control-zoom {
-      top: 60px;
+      top: 72px;
+    }
+
+    .leaflet-control-zoom a {
+      background-color: rgba(255, 255, 255, 0.8);
     }
 
     /* leaflet layers control plugin css */
@@ -152,6 +158,42 @@
     .leaflet-control-layers .trigger-radio:checked~label {
       display: block;
     }
+
+    /* layer control background color */
+    .leaflet-control-layers-expanded {
+      background-color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* the slider and temporal legend */
+    #slider {
+      position: absolute;
+      height: 24px;
+      bottom: 15px;
+      left: 103px;
+      z-index: 1000;
+      background-color: rgba(255, 255, 255, 0.8);
+      border-radius: 3px;
+      box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .temporal-legend {
+      background-color: rgba(255, 255, 255, 0.8);
+      position: absolute;
+      left: 2px;
+      height: 24px;
+      width: 89px;
+      bottom: 15px;
+      z-index: 1000;
+      border-radius: 3px;
+      box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    #span {
+     line-height: normal;
+     position: relative;
+     top: -50%;
+    }
   </style>
 </head>
 
@@ -163,6 +205,12 @@
   </header>
   <!-- The map -->
   <div id="map"></div>
+  <!-- ui slider -->
+  <div id='slider'>
+    <!-- Use the first and last year of the time data as the min and max. Set the initial value as the first year. Set the steps at one year. -->
+    <input type="range" min="5" max="18" value="5" step="1" class="slider" />
+  </div>
+  <!-- end slider -->
   <!-- Add a link to the Leaflet JavaScript library so you can reference it for building your map -->
   <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"></script>
   <!-- Load Esri Leaflet from CDN -->
@@ -206,6 +254,9 @@
     	maxZoom: 11,
     	ext: 'png'
     }).addTo(map);
+
+    // define the value in the slider when the map loads
+    let currentCentury = $('.slider').val();
 
     // define the clustered layer support
     var mcgLayerSupportGroup = L.markerClusterGroup.layerSupport(),
@@ -399,6 +450,8 @@
         }]
       }).addTo(map);
 
+      zoom2Fit.button.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+
     // use jquery to load GeoJSON data
     $.when(
       $.getJSON('data/Syriac-Manuscripts-Data.geojson'), // replace
@@ -563,7 +616,61 @@
         }
       });
 
+      // call functions defined below
+      sequenceUI(currentCentury);
+      createTemporalLegend(currentCentury);
+
     });
+
+    // add a UI slider
+    function sequenceUI(currentCentury) {
+
+      // create Leaflet control for the slider
+      const sliderControl = L.control({
+        position: 'bottomleft',
+        follow: true
+      });
+
+      // add controls to the slider
+      sliderControl.onAdd = function(map) {
+
+        const controls = L.DomUtil.get("slider");
+
+        L.DomEvent.disableScrollPropagation(controls);
+        L.DomEvent.disableClickPropagation(controls);
+
+        return controls;
+
+      }
+
+      // add the control to the map
+      sliderControl.addTo(map);
+
+      // use the jQuery ajax method to get the slider element
+      $('.slider')
+        .on('input change', function() { // when the input changes...
+          $(".temporal-legend").html("<h2><span id='span'>" + this.value + "th Century</span></h2>");
+          //let currentCentury = $(this).val(); // identify the year selected with "currentYear"
+        });
+
+    }; // end sequenceUI function
+
+    // add a temporal legend in sync with the UI slider
+    function createTemporalLegend(currentCentury) {
+
+      const temporalLegend = L.control({
+        position: 'bottomleft' // place the temporal legend at bottom left corner
+      });
+
+      temporalLegend.onAdd = function(map) {
+        var output = L.DomUtil.create("div", "temporal-legend");
+        $(output).html("<h2><span id='span'>" + currentCentury + "th Century</span></h2>"); // set grade value to the year selected on map load
+        return output;
+      }
+
+      temporalLegend.addTo(map);
+
+    }; // end createTemporalLegend function
   </script>
 </body>
 
